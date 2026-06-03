@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches: [develop, main, v0.6.x]
+  pull_request:
+    branches: [develop, main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ─── TypeScript 类型检查 ───
+  type-check:
+    name: TypeScript Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 23
+          cache: 'npm'
+      - run: npm ci
+      - run: npx tsc --noEmit
+
+  # ─── 单元测试 ───
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 23
+          cache: 'npm'
+      - run: npm ci
+      - run: npm test -- --run
+
+  # ─── 安全扫描 ───
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 23
+          cache: 'npm'
+      - run: npm ci
+      - run: npm audit --audit-level=high
+        continue-on-error: true
+
+  # ─── 构建验证 ───
+  build:
+    name: Build
+    needs: [type-check, test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 23
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run build

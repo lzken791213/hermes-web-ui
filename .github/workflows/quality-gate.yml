@@ -1,0 +1,33 @@
+name: Quality Gate
+
+on:
+  pull_request:
+    types: [opened, synchronize, labeled]
+
+jobs:
+  # 检查 PR 是否有对应的 Issue
+  check-issue:
+    name: Check Issue Reference
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check PR body contains issue reference
+        run: |
+          if ! echo "${{ github.event.pull_request.body }}" | grep -qiE '(fixes|closes|resolves|refs|#)[0-9]+'; then
+            echo "⚠️ PR 未关联 Issue，请确保有对应 Issue"
+          else
+            echo "✅ Issue 已关联"
+          fi
+
+  # 检查 PR 是否符合规范
+  check-systematic:
+    name: Systematic Modification Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check PR has risk assessment
+        run: |
+          BODY="${{ github.event.pull_request.body }}"
+          if echo "$BODY" | grep -qiE '(风险评估|risk|phase 0|影响范围)'; then
+            echo "✅ 已包含风险评估"
+          else
+            echo "⚠️ 建议在 PR 描述中添加风险评估（Phase 0）"
+          fi
